@@ -35,7 +35,7 @@ export class CatalogBrowserService {
               @Inject(CONNECTOR_CATALOG_API) private catalogApiUrl: string) {
   }
 
-  getContractOffers(): Observable<ContractOffer[]> {
+  getContractOffers(query: any = null): Observable<ContractOffer[]> {
     let url = this.catalogApiUrl || this.managementApiUrl;
     return this.post<Catalog[]>(url + "/federatedcatalog")
       .pipe(map(catalogs => catalogs.map(catalog => {
@@ -52,7 +52,9 @@ export class CatalogBrowserService {
             name: dataSet["edc:name"],
             version: dataSet["edc:version"],
             type: dataSet["edc:type"],
-            contentType: dataSet["edc:contenttype"]
+            contentType: dataSet["edc:contenttype"],
+            marketplace_id: dataSet['edc:marketplace_id'],
+            gx_id: dataSet['edc:gx_id']
           }
           const assetId = dataSet["@id"];
 
@@ -84,8 +86,17 @@ export class CatalogBrowserService {
         }
         return arr;
       })), reduce((acc, val) => {
+        let getHashFromGxId = (id: string) => new URL(id).pathname.split('/')[2]; 
         for(let i = 0; i < val.length; i++){
           for(let j = 0; j < val[i].length; j++){
+            if (!val[i][j]) continue;
+            if (query && query.gx_id){
+              if ( !(val[i][j].properties.gx_id && getHashFromGxId(query.gx_id) === getHashFromGxId(val[i][j].properties.gx_id)) ) continue;
+            }
+            if (query && query.mk_id){
+              if ( !(val[i][j].properties.marketplace_id && query.mk_id === val[i][j].properties.marketplace_id) ) continue;
+            }
+            // console.log("val[i][j]:", val[i][j]);
             acc.push(val[i][j]);
           }
         }
